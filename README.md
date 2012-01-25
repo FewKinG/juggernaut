@@ -465,6 +465,9 @@ NOTE: This whole authentication feature is to be considered experimental and is 
 have additional unknown issues. For example the keypools are not automatically cleaned for now (that is if a key is added
 but never redeemed it will stay in the pool even after the lifespan has expired. It will only be deleted once
 a client tries to redeem it or the juggernaut server is restarted).
+
+Also note that the security of this mechanism strongly depends on the cryptographic strength of your keys and their
+lifetime. Using simple_uuid might not be the best idea there.
      
 ##Full examples
 
