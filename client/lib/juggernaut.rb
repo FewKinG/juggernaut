@@ -10,7 +10,22 @@ module Juggernaut
     "juggernaut:unsubscribe", 
     "juggernaut:custom"
   ]
-  
+
+  def create_key(channels)
+    require 'simple_uuid'
+    key = SimpleUUID::UUID.new.to_guid
+    Juggernaut.command(channels, {
+      :enableAuth => true,
+      :addKey => key
+    })
+    key
+  end
+ 
+  def command(channels, commands)
+    message = ({:channels => Array(channels).uniq, :commands => commands})
+    redis.publish(key, message.to_json)
+  end
+
   def options
     @options ||= {}
   end
