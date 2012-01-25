@@ -392,6 +392,80 @@ So, as to the JavaScript side to the observer, we need to subscribe to a observe
     var jug = new Juggernaut;
     jug.subscribe("/observer/" + user_id, process);
 
+##Channel authentication
+
+To allow access to a channel only to specific clients, you can enable channel authentication on specific
+channels.
+
+The mechanism works as follows:
+
+* The application (e.g. rails) enables authentication on a channel
+* For each client that should be able to connect the application creates a secret key and adds it to the channel's key pool
+* The client (browser) subscribes to the channel by supplying the key
+* The key is then redeemed and the subscription completed
+
+###Code examples:
+
+With juggernaut running, enable channel auth and provide two valid keys:
+
+     Juggernaut.command(channels, {
+     		:enableAuth => true,
+     		:addKey => "123456",
+     		:addKey => "654321"
+     })
+
+You can also use create_key which enables authentication and creates a unique key (requires the simple_uuid gem)
+
+     key = Juggernaut.create_key(channels)
+     
+On the client side you subscribe to a auth enabled channel like so
+
+    var jug = new Juggernaut;
+    jug.subscribe(channel, process, {
+    		key: "123456"
+    });
+     
+Each key in the key pool can only be used once. Also the keys expire after a certain time (default 24h).
+You can modify this setting (e.g. to 1 minute):
+
+    Juggernaut.command(channels, {
+    		:setKeyLifetime => 60
+    })
+
+Other commands are
+
+    Juggernaut.command(channels, {
+    		:dropClient => client_session_id,  # drops the client with the given id from channels
+    		:dropAllClients => nil,            # drops all clients in channels
+    		:clearKeys => nil                  # empty the keypool for channels
+    })
+    
+Note that before channel authentication is enabled, anyone could subscribe to the channel and receive
+published messages even if authentication is enabled afterwards. To prevent this, drop all clients from the
+channel after enabling authentication or enable authentication for that channel per default:
+    
+###Auth-enable channels per default
+
+You can provide the juggernaut server with a JSON-file containing an array of channel prefixes for channels
+that should always use authentication. This file might look like:
+
+    [
+    		"/example/",
+    		"/auth/"
+    ]
+    
+You can then start juggernaut with
+
+    juggernaut --authfile /path/to/authfile
+    
+Then all channels starting with "/example/" or "/auth/" (e.g. "/auth/private1/") would be always use authentication
+(except if you turn it off manually via commands).
+
+NOTE: This whole authentication feature is to be considered experimental and is rarely tested. It has known and may
+have additional unknown issues. For example the keypools are not automatically cleaned for now (that is if a key is added
+but never redeemed it will stay in the pool even after the lifespan has expired. It will only be deleted once
+a client tries to redeem it or the juggernaut server is restarted).
+     
 ##Full examples
 
 You can see the full examples inside [Holla](http://github.com/maccman/holla), specifically [roster.rb](https://github.com/maccman/holla/blob/original/app/models/roster.rb),  [juggernaut_observer.rb](https://github.com/maccman/holla/blob/original/app/observers/juggernaut_observer.rb) and [application.juggernaut.js](https://github.com/maccman/holla/blob/original/app/javascripts/application.juggernaut.js).
